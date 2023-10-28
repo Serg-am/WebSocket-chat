@@ -17,7 +17,7 @@ var colors = [
 ];
 
 function connect(event) {
-    $.get("http://localhost:8080/getUser", function (data) {
+    $.get("http://snow-adventure.ru:8080/getUser", function (data) {
         // Здесь data содержит имя пользователя, полученное от сервера
         username = data;
     });
@@ -115,7 +115,7 @@ function getAvatarColor(messageSender) {
 }
 
 function loadChatHistory() {
-    $.get("http://localhost:8080/getChatHistory", function (data) {
+    $.get("http://snow-adventure.ru:8080/getChatHistory", function (data) {
         data.forEach(function (message) {
             displayMessage(message);
         });

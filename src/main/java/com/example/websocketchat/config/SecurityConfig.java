@@ -24,23 +24,28 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         this.userDetailsService = userDetailsService;
     }
 
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/css/**", "/fonts/**", "/img/**", "/js/**", "/login", "/registration").permitAll()
-                .antMatchers("/logout").permitAll()
-                //.anyRequest().authenticated()
-                .anyRequest().hasAnyRole("USER")
+                .antMatchers("/css/**", "/fonts/**", "/img/**", "/js/**", "/login", "/registration", "/access-denied", "/logout").permitAll()
+                .anyRequest().authenticated()
                 .and()
-                .formLogin().loginPage("/login")
+                .formLogin()
+                .loginPage("/login")
                 .loginProcessingUrl("/process_login")
                 .defaultSuccessUrl("/", true)
                 .failureUrl("/login?error")
                 .and()
                 .logout()
-                .logoutUrl("/logout");
+                .logoutUrl("/logout")
+                .and()
+                .exceptionHandling()
+                .accessDeniedPage("/access-denied");
     }
+
+
 
 
     @Override
