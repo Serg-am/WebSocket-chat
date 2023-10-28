@@ -17,24 +17,22 @@ var colors = [
 ];
 
 function connect(event) {
-    $.get("http://snow-adventure.ru:8080/getUser", function (data) {
+    $.get("http://localhost:8080/getUser", function (data) {
         // Здесь data содержит имя пользователя, полученное от сервера
         username = data;
     });
-        if (username) {
-            usernamePage.classList.add('hidden');
-            chatPage.classList.remove('hidden');
+    if (username) {
+        usernamePage.classList.add('hidden');
+        chatPage.classList.remove('hidden');
 
-            var socket = new SockJS('/ws');
-            stompClient = Stomp.over(socket);
+        var socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
 
-            stompClient.connect({}, onConnected, onError);
-        }
+        stompClient.connect({}, onConnected, onError);
+    }
 
     event.preventDefault();
 }
-
-
 
 function onConnected() {
     // Subscribe to the Public Topic
@@ -49,16 +47,14 @@ function onConnected() {
     connectingElement.classList.add('hidden');
 }
 
-
 function onError(error) {
     connectingElement.textContent = 'Could not connect to WebSocket server. Please refresh this page to try again!';
     connectingElement.style.color = 'red';
 }
 
-
 function sendMessage(event) {
     var messageContent = messageInput.value.trim();
-    if(messageContent && stompClient) {
+    if (messageContent && stompClient) {
         var chatMessage = {
             sender: username,
             content: messageInput.value,
@@ -70,18 +66,17 @@ function sendMessage(event) {
     event.preventDefault();
 }
 
-
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
+    displayMessage(message);
+}
 
+function displayMessage(message) {
     var messageElement = document.createElement('li');
 
-    if(message.type === 'JOIN') {
+    if (message.type === 'JOIN' || message.type === 'LEAVE') {
         messageElement.classList.add('event-message');
-        message.content = message.sender + ' joined!';
-    } else if (message.type === 'LEAVE') {
-        messageElement.classList.add('event-message');
-        message.content = message.sender + ' left!';
+        message.content = message.sender + ' ' + message.type.toLowerCase() + 'ed!';
     } else {
         messageElement.classList.add('chat-message');
 
@@ -109,6 +104,7 @@ function onMessageReceived(payload) {
 }
 
 
+
 function getAvatarColor(messageSender) {
     var hash = 0;
     for (var i = 0; i < messageSender.length; i++) {
@@ -116,6 +112,14 @@ function getAvatarColor(messageSender) {
     }
     var index = Math.abs(hash % colors.length);
     return colors[index];
+}
+
+function loadChatHistory() {
+    $.get("http://localhost:8080/getChatHistory", function (data) {
+        data.forEach(function (message) {
+            displayMessage(message);
+        });
+    });
 }
 
 var lFollowX = 0,
@@ -128,7 +132,7 @@ function moveBackground() {
     x += (lFollowX - x) * friction;
     y += (lFollowY - y) * friction;
 
-    translate = 'translate(' + x + 'px, ' + y + 'px) scale(1.1)';
+    var translate = 'translate(' + x + 'px, ' + y + 'px) scale(1.1)';
 
     $('.bg').css({
         '-webit-transform': translate,
@@ -139,70 +143,15 @@ function moveBackground() {
     window.requestAnimationFrame(moveBackground);
 }
 
-$(window).on('mousemove click', function(e) {
-
+$(window).on('mousemove click', function (e) {
     var lMouseX = Math.max(-100, Math.min(100, $(window).width() / 2 - e.clientX));
     var lMouseY = Math.max(-100, Math.min(100, $(window).height() / 2 - e.clientY));
     lFollowX = (20 * lMouseX) / 100; // 100 : 12 = lMouxeX : lFollow
     lFollowY = (10 * lMouseY) / 100;
-
 });
 
 moveBackground();
 
-
-usernameForm.addEventListener('submit', connect, true)
-messageForm.addEventListener('submit', sendMessage, true)
-
-var lFollowX = 0,
-    lFollowY = 0,
-    x = 0,
-    y = 0,
-    friction = 1 / 30, translate;
-
-function moveBackground() {
-    x += (lFollowX - x) * friction;
-    y += (lFollowY - y) * friction;
-
-    translate = 'translate(' + x + 'px, ' + y + 'px) scale(1.1)';
-
-    $('.bg').css({
-        '-webit-transform': translate,
-        '-moz-transform': translate,
-        'transform': translate
-    });
-
-    window.requestAnimationFrame(moveBackground);
-}
-
-$(window).on('mousemove click', function(e) {
-
-    var lMouseX = Math.max(-100, Math.min(100, $(window).width() / 2 - e.clientX));
-    var lMouseY = Math.max(-100, Math.min(100, $(window).height() / 2 - e.clientY));
-    lFollowX = (20 * lMouseX) / 100; // 100 : 12 = lMouxeX : lFollow
-    lFollowY = (10 * lMouseY) / 100;
-
-});
-
-moveBackground();
-
-
-
-if (window.innerWidth < 768) {
-    [].slice.call(document.querySelectorAll('[data-bss-disabled-mobile]')).forEach(function (elem) {
-        elem.classList.remove('animated');
-        elem.removeAttribute('data-bss-hover-animate');
-        elem.removeAttribute('data-aos');
-        elem.removeAttribute('data-bss-parallax-bg');
-        elem.removeAttribute('data-bss-scroll-zoom');
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-
-    var hoverAnimationTriggerList = [].slice.call(document.querySelectorAll('[data-bss-hover-animate]'));
-    var hoverAnimationList = hoverAnimationTriggerList.forEach(function (hoverAnimationEl) {
-        hoverAnimationEl.addEventListener('mouseenter', function(e){ e.target.classList.add('animated', e.target.dataset.bssHoverAnimate) });
-        hoverAnimationEl.addEventListener('mouseleave', function(e){ e.target.classList.remove('animated', e.target.dataset.bssHoverAnimate) });
-    });
-}, false);
+usernameForm.addEventListener('submit', connect, true);
+messageForm.addEventListener('submit', sendMessage, true);
+loadChatHistory(); // Загрузка истории чата при загрузке страницы

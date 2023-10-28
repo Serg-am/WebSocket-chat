@@ -1,6 +1,9 @@
 package com.example.websocketchat.controller;
 
 import com.example.websocketchat.chat.ChatMessage;
+import com.example.websocketchat.model.ChatModel; // Импортируйте ваш класс ChatModel
+import com.example.websocketchat.chat.MessageType;
+import com.example.websocketchat.repository.ChatMessageRepository;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -10,18 +13,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 public class ChatController {
 
+
+    private final ChatMessageRepository chatMessageRepository;
+
+    public ChatController(ChatMessageRepository chatMessageRepository) {
+        this.chatMessageRepository = chatMessageRepository;
+    }
+
     @GetMapping("/login")
-    public String loginPage(){
+    public String loginPage() {
         return "login";
     }
 
     @GetMapping("/getUser")
     @ResponseBody
-    public String getUser(Principal principal){
+    public String getUser(Principal principal) {
         if (principal == null) {
             return "";
         }
@@ -33,6 +44,9 @@ public class ChatController {
     public ChatMessage sendMessage(
             @Payload ChatMessage chatMessage
     ) {
+        // Сохранить сообщение в базе данных
+        ChatModel chatModel = new ChatModel(chatMessage.getSender(), chatMessage.getContent(), MessageType.CHAT);
+        chatMessageRepository.save(chatModel);
         return chatMessage;
     }
 
@@ -44,5 +58,12 @@ public class ChatController {
     ) {
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
         return chatMessage;
+    }
+
+    @GetMapping("/getChatHistory")
+    @ResponseBody
+    public List<ChatModel> getChatHistory() {
+        // Получить историю чата из базы данных
+        return chatMessageRepository.findByOrderByTimestampAsc();
     }
 }
