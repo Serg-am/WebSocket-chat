@@ -21,24 +21,21 @@ public class ChatModel {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Enumerated(EnumType.STRING) // Чтобы сохранять enum как строку
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", columnDefinition = "TEXT")
     private MessageType type;
 
-
-    @Temporal(TemporalType.TIMESTAMP) // Указываем, что это поле для хранения даты и времени
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "timestamp")
-    private Date timestamp; // Поле timestamp
+    private Date timestamp;
 
     public ChatModel(String sender, String content, MessageType type) {
         this.sender = sender;
-        this.content = content;
         this.type = type;
-        this.timestamp = new Date(); // Установите текущее время
+        this.timestamp = new Date();
+        this.content = content;
     }
 
     public ChatModel() {
-
     }
 }
-

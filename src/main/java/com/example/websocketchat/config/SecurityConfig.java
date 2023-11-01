@@ -1,6 +1,7 @@
 package com.example.websocketchat.config;
 
 
+import com.example.websocketchat.security.UniqueKeyGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,9 +20,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailsService userDetailsService;
 
+    private final UniqueKeyGenerator uniqueKeyGenerator;
     @Autowired
-    public SecurityConfig(UserDetailsService userDetailsService) {
+    public SecurityConfig(UserDetailsService userDetailsService, UniqueKeyGenerator uniqueKeyGenerator) {
         this.userDetailsService = userDetailsService;
+        this.uniqueKeyGenerator = uniqueKeyGenerator;
     }
 
 
@@ -42,10 +45,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .logoutUrl("/logout")
                 .and()
                 .exceptionHandling()
-                .accessDeniedPage("/access-denied");
+                .accessDeniedPage("/access-denied")
+                .and()
+                .rememberMe()
+                .key(uniqueKeyGenerator.generateUniqueKey())
+                .tokenValiditySeconds(2592000)
+                .alwaysRemember(true);
     }
-
-
 
 
     @Override

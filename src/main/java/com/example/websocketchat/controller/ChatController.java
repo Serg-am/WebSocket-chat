@@ -1,9 +1,10 @@
 package com.example.websocketchat.controller;
 
 import com.example.websocketchat.chat.ChatMessage;
-import com.example.websocketchat.model.ChatModel; // Импортируйте ваш класс ChatModel
+import com.example.websocketchat.model.ChatModel;
 import com.example.websocketchat.chat.MessageType;
 import com.example.websocketchat.repository.ChatMessageRepository;
+import com.example.websocketchat.security.ChatModelEncryptionService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -20,9 +21,11 @@ public class ChatController {
 
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatModelEncryptionService chatModelEncryptionService;
 
-    public ChatController(ChatMessageRepository chatMessageRepository) {
+    public ChatController(ChatMessageRepository chatMessageRepository, ChatModelEncryptionService chatModelEncryptionService) {
         this.chatMessageRepository = chatMessageRepository;
+        this.chatModelEncryptionService = chatModelEncryptionService;
     }
 
     @GetMapping("/login")
@@ -45,7 +48,7 @@ public class ChatController {
             @Payload ChatMessage chatMessage
     ) {
         // Сохранить сообщение в базе данных
-        ChatModel chatModel = new ChatModel(chatMessage.getSender(), chatMessage.getContent(), MessageType.CHAT);
+        ChatModel chatModel = new ChatModel(chatMessage.getSender(), chatModelEncryptionService.encryptContent(chatMessage.getContent()), MessageType.CHAT);
         chatMessageRepository.save(chatModel);
         return chatMessage;
     }
@@ -63,7 +66,14 @@ public class ChatController {
     @GetMapping("/getChatHistory")
     @ResponseBody
     public List<ChatModel> getChatHistory() {
-        // Получить историю чата из базы данных
-        return chatMessageRepository.findByOrderByTimestampAsc();
+        List<ChatModel> chatHistory = chatMessageRepository.findByOrderByTimestampAsc();
+
+        // Расшифровать контент каждого сообщения перед возвратом
+        chatHistory.forEach(chatModel -> {
+            String decryptedContent = chatModelEncryptionService.decryptContent(chatModel.getContent());
+            chatModel.setContent(decryptedContent);
+        });
+
+        return chatHistory;
     }
 }
